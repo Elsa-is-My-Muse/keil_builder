@@ -38,8 +38,10 @@ class KeilBuilder:
 
     def _find_projects(self) -> List[Path]:
         projects = []
-        for suffix in [".uvprojx", ".uvproj"]:
-            projects.extend(self.current_dir.rglob(f"*{suffix}"))
+        # 只查找.uvprojx工程，并且过滤掉template.*工程
+        for path in self.current_dir.rglob("*.uvprojx"):
+            if not path.name.lower().startswith("template."):
+                projects.append(path)
         return projects
 
     def _parse_output_info(self) -> Tuple[Optional[str], Optional[str]]:
@@ -97,7 +99,7 @@ class KeilBuilder:
         print("  -h, --help, /?  Show this help message")
         print()
         print("Arguments:")
-        print("  project_file    Keil project file (.uvprojx or .uvproj)")
+        print("  project_file    Keil project file (.uvprojx)")
         print("                  If not specified, auto-detect in current directory")
         print("  target          Build target name (optional)")
         print()
@@ -122,11 +124,14 @@ class KeilBuilder:
                 except ValueError:
                     print(f"[WARNING] Invalid -j parameter: {arg}, using default -j0")
                     self.parallel_jobs = 0
-            elif arg.endswith((".uvprojx", ".uvproj")):
+            elif arg.endswith(".uvprojx"):
                 if Path(arg).is_absolute():
                     self.project_path = Path(arg)
                 else:
                     self.project_path = self.current_dir / arg
+            elif arg.endswith(".uvproj"):
+                # 过滤掉.uvproj工程
+                continue
             elif arg in ["-h", "--help", "/?"]:
                 self._show_help()
                 sys.exit(0)
